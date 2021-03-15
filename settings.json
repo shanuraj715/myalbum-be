@@ -1,0 +1,7 @@
+{
+    "mongodbUrl": "mongodb://localhost:27017",
+    "databaseName": "myalbum",
+    "sessionKeyLength": 64,
+    "useridLength": 12,
+    "loggedFor": 28
+}
