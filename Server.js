@@ -112,4 +112,6 @@ server.use((error, req, res, next) => {
     res.status(error.code || 500)
     res.json({message: error.message || "An unknown error occured"})
 })
-server.listen(7250)
+server.listen(process.env.PORT || 5000, () => {
+    console.log("APP is running on port " + PORT)
+})
