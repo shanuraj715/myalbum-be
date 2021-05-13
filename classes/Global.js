@@ -22,12 +22,15 @@ class Global{
         return id
     }
 
-    validateUserLogin = async ( req ) => {
+    validateUserLogin = async req => {
         /**
          * validating user logged in using session cookie
          * cookie name : sessionId
          */
-        const sessionId = req.params.sessionId
+        let sessionId = req.params.sessionId || req.params.sessionid
+        if( sessionId === 0 || sessionId === undefined ){
+            sessionId = req.headers.sessionid || req.headers.sessionId
+        }
         const SessionModel = new mongoose.model("Session", Sessions)
         const findSessionData = await SessionModel.find({
             sessionId: sessionId
@@ -59,7 +62,7 @@ class Global{
         }
     }
 
-    directoryCreate = async ( path ) => {
+    directoryCreate = async path => {
         // console.log( path )
         let dirs = path.split('/')
         let initial_path = ''
@@ -77,7 +80,7 @@ class Global{
             return true
             
         })
-        console.log( this.directoryExists( path ) )
+        // console.log( this.directoryExists( path ) )
         if( this.directoryExists( path ) ){
             return true
         }
@@ -86,7 +89,7 @@ class Global{
         }
     }
 
-    generateAppFilesName = ( file_name ) => {
+    generateAppFilesName = file_name => {
         /**
          * accept the name of the file
          * create a new file name and change the file name
@@ -124,7 +127,7 @@ class Global{
         return str1 + str2 + file_name_without_ext + '.' + file_extension
     }
 
-    generateUserFilesName = ( file_name ) => {
+    generateUserFilesName = file_name => {
         /**
          * accept the name of the file
          * create a new file name and change the file name
@@ -160,6 +163,33 @@ class Global{
          * ex: 1613233184383AbcdMyPhoto.jpg
          */
         return str2 + '.' + file_extension
+    }
+
+    generateAlbumUrl = () => {
+        const array_of_chars = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','0','1','2','3','4','5','6','7','8','9','-','_']
+        let url = ''
+        for( let i=0; i < 128; i++ ){
+            url += array_of_chars[Math.ceil(Math.random() * (array_of_chars.length - 1))]
+        }
+        return url
+    }
+
+    deleteFile = async file_path => {
+        fs.stat(file_path, ( err, stats ) => {
+            if( !err ){
+                fs.unlink( file_path, ( err ) => {
+                    if( !err ){
+                        return true
+                    }
+                    else{
+                        return false
+                    }
+                })
+            }
+            else{
+                return false
+            }
+        })
     }
 }
 

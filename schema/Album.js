@@ -34,6 +34,10 @@ const Schema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
+    shortUrl: {
+        type: String,
+        default: ''
+    },
     color:{
         type: String,
         default: 'transparent'

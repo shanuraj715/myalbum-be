@@ -25,14 +25,13 @@ const UserModel = new mongoose.model('User', UserSchema)
 const FileModel = new mongoose.model('File', FilesSchema)
 
 validateAlbum = async ( albumId ) => {
+    // console.log( albumId )
     const albumData = await AlbumsModel.find({
         albumId: albumId
     })
-    if( albumData.length === 1 ){
+    // console.log( albumData )
+    if( albumData ){
         return albumData
-    }
-    else{
-        return false
     }
 }
 
@@ -48,92 +47,184 @@ const fileEncNameToHttpPathConverter = ( files_in_array, userId, userRegDate ) =
 
 
 router.get('/:albumid/:sessionId', async ( req, res, next ) => {
-    console.clear()
+    // console.clear()
+    // console.log("1")
     const albumId = req.params.albumid
     const sessionId = req.params.sessionId
     try{
 
         const albumData = await validateAlbum( albumId )
-
-        const userData = await UserModel.find({
-            userId: albumData[0].userId
-        })
-        if( userData && userData.length === 1 ){
-            const userAccountStatus = userData[0].status
-            if( !userAccountStatus ){
-                res.json({
-                    status: false,
-                    error: {
-                        message: "Account disabled"
-                    }
-                })
-                return false
-            }
-        }
-
-        if( albumData.length ){
-            const userId = albumData[0].userId
-            /**
-             * to create a http url of the files
-             * we are making a constant for user registration date
-             */
-            const userRegDate = userData[0].regDate
-            const albumName = albumData[0].name
-            const albumId = albumData[0].albumId
-            const creation = albumData[0].createdAt
-            const modified = albumData[0].updatedAt
-
-            const albumPropsData = await AlbumModel.find({
-                albumId: albumId
+        // console.log( albumData )
+        if( albumData.length === 1 ){
+            // console.log("2")
+            const userData = await UserModel.find({
+                userId: albumData[0].userId
             })
-            if( albumPropsData.length && albumPropsData.length === 1 ){
-                const privacy = albumPropsData[0].privacy
-                const theme = albumPropsData[0].theme
-                const starred = albumPropsData[0].starred
-                const color = albumPropsData[0].color
-                const name = albumPropsData[0].name
-                const title = albumPropsData[0].title
-                const description = albumPropsData[0].description
-                const sharedWith = albumPropsData[0].sharedWith
-                const files = albumPropsData[0].files
+            if( userData && userData.length === 1 ){
+                const userAccountStatus = userData[0].status
+                if( !userAccountStatus ){
+                    res.json({
+                        status: false,
+                        error: {
+                            code: 403,
+                            message: "Account disabled"
+                        }
+                    })
+                    return false
+                }
+            }
+            if( albumData.length && albumData[0].status !== 'trashed' ){
+                const userId = albumData[0].userId
+                /**
+                 * to create a http url of the files
+                 * we are making a constant for user registration date
+                 */
+                const userRegDate = userData[0].regDate
+                const albumName = albumData[0].name
+                const albumId = albumData[0].albumId
+                const creation = albumData[0].createdAt
+                const modified = albumData[0].updatedAt
 
-                const sessiondata = await SessionModel.find({
-                    sessionId: sessionId || 0,
-                    status: true
+                const albumPropsData = await AlbumModel.find({
+                    albumId: albumId
                 })
-                console.log( sessiondata.length )
-                if( sessiondata.length && sessiondata.length === 1 ){
-                    if( sessiondata[0].userId === userId ){
-                        const sessionExpireTimestamp = new Date(sessiondata[0].expire).getTime()
-                        const currentTimeStamp = Date.now()
-                        if( sessionExpireTimestamp - currentTimeStamp > 0 ){
-                            res.json({
-                                status: true,
-                                albumData: {
-                                    userId: userId,
-                                    albumId: albumId,
-                                    albumName: name,
-                                    albumTitle: title,
-                                    albumDescription: description,
-                                    createdAt: creation,
-                                    lastModified: modified,
-                                    privacy: privacy,
-                                    theme: theme,
-                                    starred: starred,
-                                    color: color,
-                                    sharedWith: sharedWith,
-                                    files: fileEncNameToHttpPathConverter( files, userId, userRegDate )
-                                }   
-                            })
+                if( albumPropsData.length && albumPropsData.length === 1 ){
+                    const privacy = albumPropsData[0].privacy
+                    const theme = albumPropsData[0].theme
+                    const starred = albumPropsData[0].starred
+                    const color = albumPropsData[0].color
+                    const name = albumPropsData[0].name
+                    const title = albumPropsData[0].title
+                    const description = albumPropsData[0].description
+                    const sharedWith = albumPropsData[0].sharedWith
+                    const files = albumPropsData[0].files
+
+                    const sessiondata = await SessionModel.find({
+                        sessionId: sessionId || 0,
+                        status: true
+                    })
+                    // console.log( sessiondata.length )
+                    if( sessiondata.length && sessiondata.length === 1 ){
+                        if( sessiondata[0].userId === userId ){
+                            const sessionExpireTimestamp = new Date(sessiondata[0].expire).getTime()
+                            const currentTimeStamp = Date.now()
+                            if( sessionExpireTimestamp - currentTimeStamp > 0 ){
+                                res.json({
+                                    status: true,
+                                    albumData: {
+                                        userId: userId,
+                                        albumId: albumId,
+                                        albumName: name,
+                                        albumTitle: title,
+                                        albumDescription: description,
+                                        createdAt: creation,
+                                        lastModified: modified,
+                                        privacy: privacy,
+                                        theme: theme,
+                                        starred: starred,
+                                        color: color,
+                                        sharedWith: sharedWith,
+                                        files: fileEncNameToHttpPathConverter( files, userId, userRegDate )
+                                    }   
+                                })
+                            }
+                            else{
+                                res.json({
+                                    status: false,
+                                    error: {
+                                        code: 403,
+                                        message:"Session expired. Please Login"
+                                    }
+                                })
+                            }
                         }
                         else{
-                            res.json({
-                                status: false,
-                                error: {
-                                    message:"Session expired. Please Login"
+                            if( privacy === 'public' ){
+                                res.json({
+                                    status: true,
+                                    albumData: {
+                                        userId: userId,
+                                        albumId: albumId,
+                                        albumName: name,
+                                        albumTitle: title,
+                                        albumDescription: description,
+                                        createdAt: creation,
+                                        theme: theme,
+                                        files: fileEncNameToHttpPathConverter( files, userId, userRegDate )
+                                    }   
+                                })
+                            }
+                            if( privacy === 'onlyme' ){
+                                res.json({
+                                    status: false,
+                                    error: {
+                                        code: 404,
+                                        message: "Album not found or album is not shared 1"
+                                    } 
+                                })
+                            }
+                            if( privacy === 'unlisted' ){
+                                res.json({
+                                    status: true,
+                                    albumData: {
+                                        userId: userId,
+                                        albumId: albumId,
+                                        albumName: name,
+                                        albumTitle: title,
+                                        albumDescription: description,
+                                        createdAt: creation,
+                                        theme: theme,
+                                        files: fileEncNameToHttpPathConverter( files, userId, userRegDate )
+                                    }   
+                                })
+                            }
+                            if( privacy === 'specific' ){
+                                /**
+                                 * check album access permission
+                                 */
+                                let shared_flag = false
+                                albumPropsData[0].sharedWith.map( (item, index) => {
+                                    console.log( sessiondata[0].userId, item)
+                                    if( sessiondata[0].userId === parseInt(item) ){
+                                        shared_flag = true
+                                    }
+                                })
+                                if( shared_flag ){
+                                    res.json({
+                                        status: true,
+                                        albumData: {
+                                            userId: userId,
+                                            albumId: albumId,
+                                            albumName: name,
+                                            albumTitle: title,
+                                            albumDescription: description,
+                                            createdAt: creation,
+                                            theme: theme,
+                                            files: fileEncNameToHttpPathConverter( files, userId, userRegDate )
+                                        }   
+                                    })
                                 }
-                            })
+                                else{
+                                    res.json({
+                                        status: false,
+                                        error: {
+                                            code: 404,
+                                            message: "Album not found or album is not shared"
+                                        } 
+                                    })
+                                }
+                            }
+                            else{
+                                res.json({
+                                    status: false,
+                                    error: {
+                                        code: 500,
+                                        message: "Invalid album privacy property in the database"
+                                    }
+                                })
+                            }
                         }
+                        
                     }
                     else{
                         if( privacy === 'public' ){
@@ -156,7 +247,7 @@ router.get('/:albumid/:sessionId', async ( req, res, next ) => {
                                 status: false,
                                 error: {
                                     code: 404,
-                                    message: "Album not found or album is not shared"
+                                    message: "Album not found."
                                 } 
                             })
                         }
@@ -176,106 +267,41 @@ router.get('/:albumid/:sessionId', async ( req, res, next ) => {
                             })
                         }
                         if( privacy === 'specific' ){
-                            /**
-                             * check album access permission
-                             */
-                            let shared_flag = false
-                            albumPropsData[0].sharedWith.map( (item, index) => {
-                                if( session.userId === item.userId ){
-                                    shared_flag = true
+                            res.json({
+                                status: false,
+                                error: {
+                                    code: 404,
+                                    message: "Album not found"
                                 }
                             })
-                            if( shared_flag ){
-                                res.json({
-                                    status: true,
-                                    albumData: {
-                                        userId: userId,
-                                        albumId: albumId,
-                                        albumName: name,
-                                        albumTitle: title,
-                                        albumDescription: description,
-                                        createdAt: creation,
-                                        theme: theme,
-                                        files: fileEncNameToHttpPathConverter( files, userId, userRegDate )
-                                    }   
-                                })
-                            }
                         }
                         else{
                             res.json({
                                 status: false,
                                 error: {
+                                    code: 500,
                                     message: "Invalid album privacy property in the database"
                                 }
                             })
                         }
                     }
-                    
                 }
                 else{
-                    if( privacy === 'public' ){
-                        res.json({
-                            status: true,
-                            albumData: {
-                                userId: userId,
-                                albumId: albumId,
-                                albumName: name,
-                                albumTitle: title,
-                                albumDescription: description,
-                                createdAt: creation,
-                                theme: theme,
-                                files: fileEncNameToHttpPathConverter( files, userId, userRegDate )
-                            }   
-                        })
-                    }
-                    if( privacy === 'onlyme' ){
-                        res.json({
-                            status: false,
-                            error: {
-                                code: 404,
-                                message: "Album not found."
-                            } 
-                        })
-                    }
-                    if( privacy === 'unlisted' ){
-                        res.json({
-                            status: true,
-                            albumData: {
-                                userId: userId,
-                                albumId: albumId,
-                                albumName: name,
-                                albumTitle: title,
-                                albumDescription: description,
-                                createdAt: creation,
-                                theme: theme,
-                                files: fileEncNameToHttpPathConverter( files, userId, userRegDate )
-                            }   
-                        })
-                    }
-                    if( privacy === 'specific' ){
-                        res.json({
-                            status: false,
-                            error: {
-                                code: 403,
-                                message: "Album not found"
-                            }
-                        })
-                    }
-                    else{
-                        res.json({
-                            status: false,
-                            error: {
-                                message: "Invalid album privacy property in the database"
-                            }
-                        })
-                    }
+                    res.json({
+                        status: false,
+                        error: {
+                            code: 500,
+                            message: "server is unable to get the album data from the database"
+                        }
+                    })
                 }
             }
             else{
                 res.json({
                     status: false,
                     error: {
-                        message: "server is unable to get the album data from the database"
+                        code: 404,
+                        message: "No album found 1"
                     }
                 })
             }
@@ -284,6 +310,7 @@ router.get('/:albumid/:sessionId', async ( req, res, next ) => {
             res.json({
                 status: false,
                 error: {
+                    code: 404,
                     message: "No album found"
                 }
             })

@@ -66,6 +66,8 @@ const Schema = new mongoose.Schema({
         type: String,
         required: true
     },
+    sharedAlbums: [],
+    knownUsers: [],
     regDate: {
         type: Date,
         default: Date.now

@@ -27,6 +27,10 @@ const AlbumsSchema = new mongoose.Schema({
     blocked: {
         type: Boolean,
         default: false
+    },
+    trashedDate: {
+        type: Date,
+        default: Date.now
     }
 },{
     timestamps: true

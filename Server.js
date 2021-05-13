@@ -16,6 +16,12 @@ const SessionData = require('./routes/Session')
 const ContactUs = require('./routes/forms/Contact-route')
 const ReportBug = require('./routes/forms/Report-bug-route')
 const User = require('./routes/User')
+const AlbumOptions = require('./routes/Album-options-route')
+const ResetPassword = require('./routes/forms/Reset-Password-route')
+const Sharing = require('./routes/AlbumSharing')
+
+const UserData = require('./routes/UserData')
+const Redirector = require('./routes/Redirector')
 
 const server = express()
 
@@ -76,17 +82,23 @@ mongoose.connect( process.env.DATABASE_URL, { useNewUrlParser: true, useUnifiedT
 
 server.use('/api/albums', Albums)
 server.use('/api/album', Album)
+server.use('/api/album-opt', AlbumOptions)
 
 server.use('/api/login', Login)
+server.use('/api/reset-password', ResetPassword)
 server.use('/api/register', Register)
 server.use('/api/activate', Activate)
 server.use('/api/verify', VerifyAccount) // send activation links ... etc...
 
 server.use('/api/edit-album', EditAlbum)
 
+server.use('/api/sharing/', Sharing)
+
 
 server.use('/api/get-session-data', SessionData )
 server.use('/api/user', User )
+server.use('/api/user-data', UserData )
+server.use('/api/redirect', Redirector)
 
 
 
